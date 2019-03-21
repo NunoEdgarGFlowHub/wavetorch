@@ -136,7 +136,7 @@ class WaveTorch(object):
                         pml_N=cfg['geom']['pml']['N'], pml_p=cfg['geom']['pml']['p'], pml_max=cfg['geom']['pml']['max'], 
                         c0=cfg['geom']['c0'], c1=cfg['geom']['c1'], eta=cfg['geom']['binarization']['eta'], beta=cfg['geom']['binarization']['beta'], 
                         init_rand=cfg['geom']['use_rand_init'], dr_x0=dr_x0, dr_x1=dr_x1, dr_y0=dr_y0, dr_y1=dr_y1,
-                        nl_b0=cfg['geom']['nonlinearity']['b0'], nl_uth=cfg['geom']['nonlinearity']['uth']
+                        nl_b0=cfg['geom']['nonlinearity']['b0'], nl_uth=cfg['geom']['nonlinearity']['uth'], nl_cnl=cfg['geom']['nonlinearity']['cnl']
                         )
             model.to(args.dev)
 
