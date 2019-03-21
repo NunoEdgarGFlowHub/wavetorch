@@ -34,7 +34,12 @@ def load_model(str_filename):
                      dload['model_state']['src_x'].numpy(), 
                      dload['model_state']['src_y'].numpy(), 
                      dload['model_state']['px'].numpy(), 
-                     dload['model_state']['py'].numpy())
+                     dload['model_state']['py'].numpy(),
+                     dr_x0=dload['model_state']['dr_x0'].item(),
+                     dr_x1=dload['model_state']['dr_x1'].item(),
+                     dr_y0=dload['model_state']['dr_y0'].item(),
+                     dr_y1=dload['model_state']['dr_y1'].item()
+                     )
     model.load_state_dict(dload['model_state'])
     model.eval()
     return model, dload["history"], dload["args"], dload["cm_train"], dload["cm_test"]
