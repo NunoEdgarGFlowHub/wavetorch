@@ -37,7 +37,6 @@ def train(model, optimizer, criterion, train_dl, test_dl, N_epochs, batch_size):
                     loss = criterion(model(xb), yb.argmax(dim=1))
             else: # Take an optimization step
                 loss = optimizer.step(closure)
-                model.clip_to_design_region()
 
             history["loss_iter"].append(loss.item())
             

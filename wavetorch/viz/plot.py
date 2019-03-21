@@ -149,12 +149,15 @@ def plot_structure(model, ax=None, quantity='c', vowels=None, cbar=False):
         show = True
         fig, ax = plt.subplots(1, 1, constrained_layout=True)
 
-    rho = model.proj_rho().detach().numpy().transpose()
+    proj_rho = self.proj_rho().detach().numpy().transpose()
+    exp_proj_rho = torch.zeros(self.Nx, self.Ny)
+    exp_proj_rho[self.dr_x0:self.dr_x1, self.dr_y0:self.dr_y1] = proj_rho
+
     if quantity == 'c':
-        Z = model.c0.item() + (model.c1.item()-model.c0.item())*rho
+        Z = model.c0.item() + (model.c1.item()-model.c0.item())*exp_proj_rho
         limits = np.array([model.c0.item(), model.c1.item()])
     else:
-        Z = rho
+        Z = exp_proj_rho
         limits = np.array([0.0, 1.0])
 
     b_boundary = model.b_boundary.numpy().transpose()

@@ -126,17 +126,16 @@ class WaveTorch(object):
                                 cfg['geom']['Ny'], cfg['geom']['pml']['N']
                                 )
 
-            if cfg['geom']['use_design_region']: # Limit the design region
-                design_region = torch.zeros(cfg['geom']['Nx'], cfg['geom']['Ny'], dtype=torch.uint8)
-                design_region[src_x+5:np.min(px)-5] = 1 # For now, just hardcode this in
-            else: # Let the design region be the enire non-PML area
-                design_region = None
+            dr_x0 = src_x+5
+            dr_x1 = np.min(px)-5
+            dr_y0 = cfg['geom']['pml']['N']+1
+            dr_y1 = cfg['geom']['Ny']-cfg['geom']['pml']['N']-1
 
             model = core.WaveCell(
                         cfg['geom']['dt'], cfg['geom']['Nx'], cfg['geom']['Ny'], src_x, src_y, px, py,
                         pml_N=cfg['geom']['pml']['N'], pml_p=cfg['geom']['pml']['p'], pml_max=cfg['geom']['pml']['max'], 
                         c0=cfg['geom']['c0'], c1=cfg['geom']['c1'], eta=cfg['geom']['binarization']['eta'], beta=cfg['geom']['binarization']['beta'], 
-                        init_rand=cfg['geom']['use_rand_init'], design_region=design_region,
+                        init_rand=cfg['geom']['use_rand_init'], dr_x0=dr_x0, dr_x1=dr_x1, dr_y0=dr_y0, dr_y1=dr_y1,
                         nl_b0=cfg['geom']['nonlinearity']['b0'], nl_uth=cfg['geom']['nonlinearity']['uth']
                         )
             model.to(args.dev)

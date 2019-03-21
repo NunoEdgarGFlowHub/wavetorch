@@ -11,7 +11,8 @@ class WaveCell(torch.nn.Module):
             self, dt, Nx, Ny, src_x, src_y, px, py, 
             nl_uth=1.0, nl_b0=0.0, eta=0.5, beta=100.0,
             pml_N=20, pml_p=4.0, pml_max=3.0, c0=1.0, c1=0.9,
-            init_rand=True, design_region=None):
+            dr_x0=None, dr_x1=None, dr_y0=None, dr_y1=None,
+            init_rand=True):
         super(WaveCell, self).__init__()
 
         assert len(px)==len(py), "Length of probe x and y coordinate vectors must be the same"
@@ -44,32 +45,23 @@ class WaveCell(torch.nn.Module):
         self.register_buffer("beta", torch.tensor(beta))
         self.register_buffer("eta", torch.tensor(eta))
 
+        self.register_buffer("dr_x0", torch.tensor(dr_x0))
+        self.register_buffer("dr_x1", torch.tensor(dr_x1))
+        self.register_buffer("dr_y0", torch.tensor(dr_y0))
+        self.register_buffer("dr_y1", torch.tensor(dr_y1))
+
         # Setup the PML/adiabatic absorber
         self.register_buffer("b_boundary", self.init_b(Nx, Ny, pml_N, pml_p, pml_max))
 
-        if design_region is not None:
-            # Use specified design region
-            assert design_region.shape == (Nx, Ny), "Design region mask dims must match spatial dims"
-            self.register_buffer("design_region", design_region * (self.b_boundary == 0))
-        else:
-            # Use all non-PML area as the design region
-            self.register_buffer("design_region", self.b_boundary == 0)
-
         if init_rand:
-            self.rho = torch.nn.Parameter( torch.round(torch.rand(Nx, Ny)) )
+            self.rho = torch.nn.Parameter( torch.round(torch.rand(dr_x1-dr_x0, dr_y1-dr_y0)) )
         else:
-            self.rho = torch.nn.Parameter( torch.ones(Nx, Ny) * 0.5 )
-
-        self.clip_to_design_region()
+            self.rho = torch.nn.Parameter( torch.ones(dr_x1-dr_x0, dr_y1-dr_y0) * 0.5 )
 
         # Spatial step size (satisfying Courant stability)
         h  = dt * 2.01 / 1.0
         # Define the laplacian conv kernel
         self.register_buffer("laplacian", h**(-2) * torch.tensor([[[[0.0,  1.0, 0.0], [1.0, -4.0, 1.0], [0.0,  1.0, 0.0]]]]))
-
-    def clip_to_design_region(self):
-        with torch.no_grad():
-            self.rho[self.design_region==0] = 0.0
 
     def proj_rho(self):
         eta = self.eta
@@ -123,9 +115,11 @@ class WaveCell(torch.nn.Module):
 
         # loop through time
         proj_rho = self.proj_rho()
-        c = self.c0 + (self.c1-self.c0)*proj_rho
+        exp_proj_rho = torch.zeros(self.Nx, self.Ny)
+        exp_proj_rho[self.dr_x0:self.dr_x1, self.dr_y0:self.dr_y1] = proj_rho
+        c = self.c0 + (self.c1-self.c0)*exp_proj_rho
         for i, xi in enumerate(x.chunk(x.size(1), dim=1)):
-            y, y1, y2 = self.step(xi, y1, y2, c, proj_rho)
+            y, y1, y2 = self.step(xi, y1, y2, c, exp_proj_rho)
             y_all.append(y)
 
         # combine into output field dist 
